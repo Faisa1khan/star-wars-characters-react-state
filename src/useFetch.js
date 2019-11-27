@@ -1,22 +1,65 @@
 import React, { useState } from 'react';
+
+const intialState = {
+  result: null,
+  loading: true,
+  error: null,
+};
+
+const fetchReducer = (state, action) => {
+  console.log(action);
+  switch (action.type) {
+    case 'LOADING':
+      return {
+        result: null,
+        loading: true,
+        error: null,
+      };
+    case 'RESPONSE_COMPLETE':
+      return {
+        result: action.payload.response,
+        loading: false,
+        error: null,
+      };
+    case 'ERROR':
+      return {
+        result: null,
+        loading: false,
+        error: action.payload.error,
+      };
+  }
+  return state;
+};
+
 export const useFetch = url => {
-  const [response, setResponse] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [state, dispatch] = React.useReducer(fetchReducer, intialState);
+
   React.useEffect(() => {
-    setLoading(true);
-    setResponse(null);
-    setError(null);
-    fetch(url)
-      .then(response => response.json())
-      .then(response => {
-        setLoading(false);
-        setResponse(response);
-      })
-      .catch(err => {
-        setLoading(false);
-        setError(err);
-      });
+    const fetchUrl = async () => {
+      try {
+        const response = await fetch(url);
+        const data = await response.json();
+        dispatch({ type: 'RESPONSE_COMPLETE', payload: { response: data } });
+      } catch (error) {
+        dispatch({ type: 'ERROR', payload: { error } });
+      }
+    };
+
+    fetchUrl();
+
+    //   dispatch({
+    //     type: 'LOADING',
+    //   });
+    //   fetch(url)
+    //     .then(response => response.json())
+    //     .then(response => {
+    //       dispatch({ type: 'RESPONSE_COMPLETE', payload: { response } });
+    //     })
+    //     .catch(error => {
+    //       dispatch({ type: 'ERROR', payload: { error } });
+    //     });
   }, [url]);
-  return [response, loading, error];
+
+  const { result, loading, error } = state;
+  return [result, loading, error];
 };
