@@ -1,65 +1,77 @@
-import React, { useState } from 'react';
+import React, { useReducer } from 'react';
+import { isFunction } from 'util';
+import endpoint from './endpoint';
 
-const intialState = {
+export const initialState = {
   result: null,
   loading: true,
   error: null,
 };
 
-const fetchReducer = (state, action) => {
+export const reducer = (state, action) => {
   console.log(action);
   switch (action.type) {
     case 'LOADING':
       return {
-        result: null,
+        characters: [],
         loading: true,
         error: null,
       };
     case 'RESPONSE_COMPLETE':
       return {
-        result: action.payload.response,
+        characters: action.payload.characters,
         loading: false,
         error: null,
       };
     case 'ERROR':
       return {
-        result: null,
+        characters: [],
         loading: false,
         error: action.payload.error,
       };
+
+    default:
+      return state;
   }
-  return state;
 };
 
-export const useFetch = url => {
-  const [state, dispatch] = React.useReducer(fetchReducer, intialState);
+export const fetchCharacters = disptach => {
+  disptach({ type: 'LOADING' });
+  fetch(endpoint + '/characters')
+    .then(response => response.json())
+    .then(response =>
+      disptach({
+        type: 'RESPONSE_COMPLETE',
+        payload: { characters: response.characters },
+      }),
+    )
+    .catch(error =>
+      disptach({
+        type: 'ERROR',
+        payload: {
+          error,
+        },
+      }),
+    );
+};
 
-  React.useEffect(() => {
-    const fetchUrl = async () => {
-      try {
-        const response = await fetch(url);
-        const data = await response.json();
-        dispatch({ type: 'RESPONSE_COMPLETE', payload: { response: data } });
-      } catch (error) {
-        dispatch({ type: 'ERROR', payload: { error } });
+export const useThunkReducer = (reducer, initialState) => {
+  const [state, dispatch] = useReducer(reducer, initialState);
+
+  const enhancedDispatch = React.useCallback(
+    action => {
+      console.log(action);
+
+      if (isFunction(action)) {
+        action(dispatch);
+        console.log('if isFucntion is called');
+      } else {
+        dispatch(action);
+        console.log('else is called');
       }
-    };
+    },
+    [dispatch],
+  );
 
-    fetchUrl();
-
-    //   dispatch({
-    //     type: 'LOADING',
-    //   });
-    //   fetch(url)
-    //     .then(response => response.json())
-    //     .then(response => {
-    //       dispatch({ type: 'RESPONSE_COMPLETE', payload: { response } });
-    //     })
-    //     .catch(error => {
-    //       dispatch({ type: 'ERROR', payload: { error } });
-    //     });
-  }, [url]);
-
-  const { result, loading, error } = state;
-  return [result, loading, error];
+  return [state, enhancedDispatch];
 };

@@ -1,17 +1,24 @@
 import ReactDOM from 'react-dom';
-import React from 'react';
-import { BrowserRouter as Router } from 'react-router-dom';
-
+import React, { useEffect } from 'react';
+import { BrowserRouter as Router, Route } from 'react-router-dom';
+import {
+  useThunkReducer,
+  reducer,
+  initialState,
+  fetchCharacters,
+} from './useFetch';
 import CharacterList from './CharacterList';
-
+import CharacterView from './CharacterView';
 import './styles.scss';
-import endpoint from './endpoint';
-import { useFetch } from './useFetch';
 
 const Application = () => {
-  const [response, loading, error] = useFetch(endpoint + '/characters');
+  const [state, dispatch] = useThunkReducer(reducer, initialState);
 
-  const characters = (response && response.characters) || [];
+  const { characters } = state;
+
+  useEffect(() => {
+    dispatch(dispatch => {});
+  }, [dispatch]);
 
   return (
     <div className="Application">
@@ -20,12 +27,13 @@ const Application = () => {
       </header>
       <main>
         <section className="sidebar">
-          {loading ? (
-            <p>Loading...</p>
-          ) : (
-            <CharacterList characters={characters} />
-          )}
-          {error && <p className="error">{error.message}</p>}
+          <button onClick={() => dispatch(fetchCharacters)}>
+            fetch Characters
+          </button>
+          <CharacterList characters={characters} />
+        </section>
+        <section className="CharacterView">
+          <Route path="/characters/:id" component={CharacterView} />
         </section>
       </main>
     </div>
